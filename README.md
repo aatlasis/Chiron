@@ -5,7 +5,7 @@ It is comprised of the following modules:
     • IPv6 Local Link
     • IPv4-to-IPv6 Proxy
     • IPv6 Attack Module
-    • IPv6 Proxy
+    • IPv6 Proxy.
 All the above modules are supported by a common library that allows the creation of completely arbitrary IPv6 header chains, fragmented or not.
 
 Suggested host OS: Linux (*BSD may also work).  
