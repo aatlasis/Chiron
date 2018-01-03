@@ -26,8 +26,7 @@ import sniffer_process
 import checkings
 sys.setrecursionlimit(30000) #Required if you want to use too many embedded fragmented Fragmentations 
 
-packets_sent_list={}
-
+#packets_list={}
 class Worker() :
 		neighbor_solicitation_cache={}
 		dns_resolution_cache={}
@@ -53,12 +52,10 @@ class Worker() :
 					dest = myworks[0]
 					destports = myworks[1]
 				except 	Queue.Empty :
-					#print "Worker %d exiting." % (self.tid)
+					print "Worker %d exiting." % (self.tid)
 					return
 				targets=[]
 				###CHECK THE VALIDITY OF THE IP DESTINATION ADDRESSES###
-				#self.lock.acquire()
-				#try:
 				resolved_ipv6_address=""
 				if checkip.is_valid_host(dest):
 					if self.dns_resolution_cache.get(dest):
@@ -70,30 +67,23 @@ class Worker() :
 							print resolved, "is the IPv6 address of the host",dest
 							self.dns_resolution_cache[dest]=resolved
 							dest=resolved
-				#finally:
-				#	#self.lock.release()
 				if self.IPv6_scope_defined==True or checkip.is_valid_ipv6(dest):  #No reason to check for the validity of an address if a scope has been defined
 					addr6 = ipaddr.IPAddress(dest)
 					myaddr=addr6.exploded
 					if myaddr[0:2]=="ff":
 						if int(myaddr[2]) >= 0 and int(myaddr[2]) < 8:
 							ether_dst="33:33:"+myaddr[30:32]+":"+myaddr[32:37]+":"+myaddr[37:39]
-					#elif self.gw_mac:
-					#	ether_dst=self.gw_mac
 					else:
 						if self.values.target_mac:
 							ether_dst=self.values.target_mac
 						elif self.neighbor_solicitation_cache.get(dest):
 							ether_dst=self.neighbor_solicitation_cache.get(dest)
-						#elif not self.neighbor_solicitation_cache.has_key(dest):
 						else:
 							ether_dst=auxiliary_functions.find_single_mac(self.source_ip, dest, self.values.interface)
 							#USE THE DEFAULT GATEWAY#
 							if not ether_dst:
 								if self.gw_mac:
 									ether_dst=self.gw_mac
-								#else:
-								#	print "Destination was not found. Please consider defining a gateway, if needed."
 							self.neighbor_solicitation_cache[dest]=ether_dst
 							if not ether_dst:
 								print dest, "not found"
@@ -131,32 +121,47 @@ class Worker() :
 							packets=create_extension_headers_chain.create_datagram(mac_source,ether_dst,int(values.number_of_fragments),list_of_next_headers,list_of_offsets,list_of_fragment_lengths,list_of_fragment_m_bits,values.fragment_id,unfragmentable_part,size_of_unfragmentable_part,first_next_header_value,fragmentable_extension_headers,size_of_fragmentable_extension_headers,layer4_and_payload)
 							create_extension_headers_chain.send_packets(s,packets,values.flood,values.delay)
 						elif self.values.tr_gen:
-							if destports==-1:
-								if self.values.layer4=="tcp":
-									destports=80
-								elif self.values.layer4=="udp":
-									destports=53
-							for hop_limit in range(self.values.minttl,self.values.maxttl+1):
-								if self.values.layer4=="tcp":
-									source_port=random.randrange(1,65535,1)
-									while packets_sent_list.has_key(source_port):
-										source_port=random.randrange(1,65535,1)
-									packets_sent_list[source_port]=(hop_limit,dest)
-									layer4_and_payload=create_layer4.tcp_packet_id(destports,"S",self.values.l4_data,source_port)
-								elif self.values.layer4=="udp":
-									source_port=random.randrange(1,65535,1)
-									while packets_sent_list.has_key(source_port):
-										source_port=random.randrange(1,65535,1)
-									packets_sent_list[source_port]=(hop_limit,dest)
-									layer4_and_payload=create_layer4.udp_packet_id(destports,self.values.l4_data,source_port)
-								else: #default layer4=="icmpv6":
-									icmpid=random.randrange(1,65535,1)  #generate a random ICMPv6 id
-									while packets_sent_list.has_key(icmpid):
-										icmpid=random.randrange(1,65535,1)  #generate a random ICMPv6 id
-									packets_sent_list[icmpid]=(hop_limit,dest)
-									layer4_and_payload=create_layer4.icmpv6_id(self.values.l4_data,icmpid)
-								packets=create_extension_headers_chain.create_datagram(mac_source,ether_dst,int(values.number_of_fragments),list_of_next_headers,list_of_offsets,list_of_fragment_lengths,list_of_fragment_m_bits,values.fragment_id,unfragmentable_part,size_of_unfragmentable_part,first_next_header_value,fragmentable_extension_headers,size_of_fragmentable_extension_headers,layer4_and_payload)
-								create_extension_headers_chain.send_packets(s,packets,values.flood,values.delay)
+                                                        packets_list={}
+							if self.values.layer4=="tcp":
+							    if destports==-1:
+								destports=80
+                                                            print "Traceroute using TCP",dst
+							    for hop_limit in range(self.values.minttl,self.values.maxttl+1):
+							        source_port=random.randrange(1,65535,1)
+							        while packets_list.has_key(source_port):
+								    source_port=random.randrange(1,65535,1)
+                                                                packets_list[source_port]=(hop_limit,dest)
+							        layer4_and_payload=create_layer4.tcp_packet_id(destports,"S",self.values.l4_data,source_port)
+						                unfragmentable_part,size_of_unfragmentable_part=create_extension_headers_chain.create_unfragmentable_part(source_ip, dest,hop_limit,values.lEu,int(values.size_of_extheaders),values.fuzz)
+							        packets=create_extension_headers_chain.create_datagram(mac_source,ether_dst,int(values.number_of_fragments),list_of_next_headers,list_of_offsets,list_of_fragment_lengths,list_of_fragment_m_bits,values.fragment_id,unfragmentable_part,size_of_unfragmentable_part,first_next_header_value,fragmentable_extension_headers,size_of_fragmentable_extension_headers,layer4_and_payload)
+							        create_extension_headers_chain.send_packets(s,packets,values.flood,values.delay)
+                                                            packets_sent_list.put(packets_list)
+							elif self.values.layer4=="udp":
+							    if destports==-1:
+								destports=53
+                                                            print "Traceroute using UDP",dst
+							    for hop_limit in range(self.values.minttl,self.values.maxttl+1):
+							        source_port=random.randrange(1,65535,1)
+								while packets_list.has_key(source_port):
+								    source_port=random.randrange(1,65535,1)
+								packets_list[source_port]=(hop_limit,dest)
+								layer4_and_payload=create_layer4.udp_packet_id(destports,self.values.l4_data,source_port)
+						                unfragmentable_part,size_of_unfragmentable_part=create_extension_headers_chain.create_unfragmentable_part(source_ip, dest,hop_limit,values.lEu,int(values.size_of_extheaders),values.fuzz)
+							        packets=create_extension_headers_chain.create_datagram(mac_source,ether_dst,int(values.number_of_fragments),list_of_next_headers,list_of_offsets,list_of_fragment_lengths,list_of_fragment_m_bits,values.fragment_id,unfragmentable_part,size_of_unfragmentable_part,first_next_header_value,fragmentable_extension_headers,size_of_fragmentable_extension_headers,layer4_and_payload)
+							        create_extension_headers_chain.send_packets(s,packets,values.flood,values.delay)
+                                                            packets_sent_list.put(packets_list)
+							else: #default layer4=="icmpv6":
+                                                            print "Traceroute using ICMPv6",dest
+							    for hop_limit in range(self.values.minttl,self.values.maxttl+1):
+							        icmpid=random.randrange(1,65535,1)  #generate a random ICMPv6 id
+								while packets_list.has_key(icmpid):
+								    icmpid=random.randrange(1,65535,1)  #generate a random ICMPv6 id
+								packets_list[icmpid]=(hop_limit,dest)
+							        layer4_and_payload=create_layer4.icmpv6_id(self.values.l4_data,icmpid)
+						                unfragmentable_part,size_of_unfragmentable_part=create_extension_headers_chain.create_unfragmentable_part(source_ip, dest,hop_limit,values.lEu,int(values.size_of_extheaders),values.fuzz)
+							        packets=create_extension_headers_chain.create_datagram(mac_source,ether_dst,int(values.number_of_fragments),list_of_next_headers,list_of_offsets,list_of_fragment_lengths,list_of_fragment_m_bits,values.fragment_id,unfragmentable_part,size_of_unfragmentable_part,first_next_header_value,fragmentable_extension_headers,size_of_fragmentable_extension_headers,layer4_and_payload)
+							        create_extension_headers_chain.send_packets(s,packets,values.flood,values.delay)
+                                                            packets_sent_list.put(packets_list)
 				else:
 					if checkip.is_valid_host(dest):
 						res_str=dest+ " could not be resolved"
@@ -242,6 +247,9 @@ def main():
 
 	###START SNIFFING###
 	q = multiprocessing.Queue()
+	packets_sent_list = multiprocessing.Queue()
+	#packets_sent_list = multiprocessing.JoinableQueue()
+        #packets_sent_list.join()
 	pr=None
 	if values.rec or values.mpn:
 		myfilter = "ip6"
@@ -251,6 +259,7 @@ def main():
 		myfilter = "ip6 and dst " + source_ip + " and src " + source_ip + " and not host " + values.dns_server
 	else:
 		myfilter = "ip6 and dst " + source_ip + " and not host " + values.dns_server
+		#myfilter = "dst " + source_ip + " and not host " + values.dns_server
 	if values.rec:	
     		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 1, packets_sent_list,q,float(values.sniffer_timeout),))
 	elif values.mpn:
@@ -270,8 +279,15 @@ def main():
 	if not values.pmtu: #IN THIS CASE SNIFFER IS NOT REQUIRED BECAUSE WE USE THE SEND/RECEIVE FUNCTIONS OF SCAPY
 		pr.daemon = True
 		pr.start()
+                packets_sent_list.close()
+                #packets_sent_list.join_thread()
 		time.sleep(1)	#to make sure than sniffer has started before we proceed, otherwise you may miss some traffic
 
+        #if pr:
+	#    try:
+	#        pr.join()
+	#    except KeyboardInterrupt:
+    	#        print "Exiting on user's request..."
 	###THE ATTACKS WILL FOLLOW NOW###
 	if values.rec:
 		try:
@@ -316,7 +332,8 @@ def main():
 			ans,unans=scapy.layers.inet6.traceroute6(ip_list)
 			print ans.display()
 			if values.destination:
-				filename="> ./"+values.destination+".svg"
+				#filename="> ./"+values.destination+".svg"
+				filename="./"+values.destination+".svg"
 			else:
 				filename="traceroure_graph_results_of_file"+values.input_file+".svg"
 				filename=filename.replace('/', '.')
@@ -324,10 +341,11 @@ def main():
 			filename=filename.replace(':', '.')
 			ans.graph(target=filename)
 			print "Graph is saved at",filename.strip('>')
-			exit(1)
-		###DEFINE THE DESTINATION PORTS
-		destports=""
-		if values.sS or values.sA or values.sX or values.sR or values.sF or values.sN or values.sU:
+			#exit(1)
+                else:
+		    ###DEFINE THE DESTINATION PORTS
+		    destports=""
+		    if values.sS or values.sA or values.sX or values.sR or values.sF or values.sN or values.sU:
 			if values.destport:
 				portlist = []
 				if values.destport.find('-')!=-1 : #if found
@@ -350,22 +368,22 @@ def main():
 				if not portlist:
 					portlist=[str(x) for x in range(1,1025)] 
 				destports = ','.join(portlist)
-		###LET'S DO THE JOB NOW
-		queue = Queue.Queue()
-		print "Let's start scanning"
-		print "Press Ctrl-C to terminate before finishing"
-		if not destports:
+		    ###LET'S DO THE JOB NOW
+		    queue = Queue.Queue()
+		    print "Let's start scanning"
+		    print "Press Ctrl-C to terminate before finishing"
+		    if not destports:
 			destports="-1"
-		for d in ip_list:
+		    for d in ip_list:
 			for p in destports.split(","):
 				queue.put([str(d),int(p)])
-		for i in xrange(1, int(values.no_of_threads)+1) :
+		    for i in xrange(1, int(values.no_of_threads)+1):
 			pr2 = multiprocessing.Process(target=Worker, args=(values,source_ip,mac_source,list_of_next_headers,list_of_offsets,list_of_fragment_lengths,list_of_fragment_m_bits,gw_mac,queue,IPv6_scope_defined,packets_sent_list,i,))
 			pr2.daemon = True
 			pr2.start()
+			print "Worker %d Created!"%i
 			pr2.join()
-			#print "Worker %d Created!"%i
-		if pr:
+		    if pr:
 			try:
 				pr.join()
 			except KeyboardInterrupt:
@@ -392,7 +410,8 @@ def print_scanning_results(values,q,source_ip):
 	elif values.tr_gen:
 		routes=results.traceroute_results(my_results)
 		for p in routes.keys():
-			print "\n",p,routes.get(p)
+		    print "\n",p,routes.get(p)
+
 	if not values.tr_gen:
 		opened_tcp_list,final_results=results.print_results(my_results, source_ip)
 
