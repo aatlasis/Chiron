@@ -5,10 +5,9 @@ from scapy.all import *
 version = '0.9'
 
 class mySniffer():
-    #def __init__ (self,filter,interface,scan_type,myresults, packets_sent_list,q):
-    def __init__ (self,filter,interface,scan_type,packets_sent_list,q, sniffer_timeout):
+    def __init__ (self,filter,interface,scan_type,packets_list,q, sniffer_timeout):
         self.filter = filter
-        self.packets_sent_list = packets_sent_list
+        self.packets_list = packets_list
         self.interface = interface
         self.scan_type=scan_type
 	self.q=q
@@ -16,57 +15,22 @@ class mySniffer():
 	print "Starting sniffing..."
 	print "Sniffer filter is",self.filter
 	print "I will sniff for",self.sniffer_timeout,"seconds, unless interrupted by Ctrl-C"
+        self.packets_sent_list={}
+        #self.packets_sent_list=self.packets_list.get()
+        #print self.packets_sent_list
+	#try:
+        #    self.packets_sent_list=self.packets_list.get(timeout=5)
+        #    #print self.packets_sent_list
+        #except:
+        #    print "continue"
     	sniff(filter=self.filter, iface=self.interface, prn=self.handler, store=0, timeout=self.sniffer_timeout)
+    	#sniff(iface=self.interface, prn=self.handler, store=0, timeout=self.sniffer_timeout)
     def handler(self,packets):
-        #Due to the filter used, only IPv6 traffic should be captured
-		res=[]
-	#if packets.haslayer(IPv6):#because it seems that the filter does not apply immediately and the very first traffic goes through: Scapy bug?
-        	if packets.haslayer(ICMPv6DestUnreach):
-			if self.scan_type==6:
-				returned_packet=packets.getlayer(ICMPv6DestUnreach)
-				if returned_packet.haslayer(ICMPv6EchoRequest):
-					embedded_packet=returned_packet.getlayer(ICMPv6EchoRequest)
-					if self.packets_sent_list.has_key(embedded_packet.id):
-						res.append(self.packets_sent_list.get(embedded_packet.id)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.id)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6DestUnreach.type%"))
-						print self.packets_sent_list.get(embedded_packet.id)[1],self.packets_sent_list.get(embedded_packet.id)[0],packets.payload.src,packets.sprintf("%ICMPv6DestUnreach.type% %ICMPv6DestUnreach.code%")
-				elif returned_packet.payload.haslayer(TCPerror):
-					embedded_packet=returned_packet.getlayer(TCPerror)
-					if self.packets_sent_list.has_key(embedded_packet.sport):
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6DestUnreach.type%"))
-						print self.packets_sent_list.get(embedded_packet.sport)[1],self.packets_sent_list.get(embedded_packet.sport)[0],packets.payload.src,packets.sprintf("%ICMPv6DestUnreach.type% %ICMPv6DestUnreach.code%")
-				elif returned_packet.payload.haslayer(UDPerror):
-					embedded_packet=returned_packet.getlayer(UDPerror)
-					if self.packets_sent_list.has_key(embedded_packet.sport):
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6DestUnreach.type%"))
-						print self.packets_sent_list.get(embedded_packet.sport)[1],self.packets_sent_list.get(embedded_packet.sport)[0],packets.payload.src,packets.sprintf("%ICMPv6DestUnreach.type% %ICMPv6DestUnreach.code%")
-				elif returned_packet.payload.haslayer(TCP):
-					embedded_packet=returned_packet.getlayer(TCP)
-					if self.packets_sent_list.has_key(embedded_packet.sport):
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6DestUnreach.type%"))
-						print self.packets_sent_list.get(embedded_packet.sport)[1],self.packets_sent_list.get(embedded_packet.sport)[0],packets.payload.src,packets.sprintf("%ICMPv6DestUnreach.type% %ICMPv6DestUnreach.code%")
-				elif returned_packet.payload.haslayer(UDP):
-					embedded_packet=returned_packet.getlayer(UDP)
-					if self.packets_sent_list.has_key(embedded_packet.sport):
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6DestUnreach.type%"))
-						print self.packets_sent_list.get(embedded_packet.sport)[1],self.packets_sent_list.get(embedded_packet.sport)[0],packets.payload.src,packets.sprintf("%ICMPv6DestUnreach.type% %ICMPv6DestUnreach.code%")
-				else:
-					print returned_packet.summary()
-			else:
+	res=[]
+        #print packets.summary()
+        if packets.haslayer(IPv6):
+            if packets.haslayer(ICMPv6DestUnreach):
+			if not self.scan_type==6:
 				res.append(packets.sprintf("%IPv6.src%"))
 				if self.scan_type==1 or self.scan_type==5:
 					res.append(packets.sprintf("%src%"))
@@ -90,34 +54,8 @@ class mySniffer():
                 			print packets.sprintf("%src% %IPv6.src% ICMPv6 %ICMPv6DestUnreach.type% %ICMPv6DestUnreach.code% Enclosed Protocol:"),packets.payload.payload.sprintf("%nh%")
 					res.append(packets.payload.payload.payload.sprintf("Target: %dst%"))
 					res.append(packets.payload.payload.payload.sprintf("Enclosed protocol: %nh%"))
-        	elif packets.haslayer(ICMPv6ParamProblem):
-			if self.scan_type==6:
-				returned_packet=packets.getlayer(ICMPv6ParamProblem)
-				if returned_packet.haslayer(ICMPv6EchoRequest):
-					embedded_packet=returned_packet.getlayer(ICMPv6EchoRequest)
-					if self.packets_sent_list.has_key(embedded_packet.id):
-						res.append(self.packets_sent_list.get(embedded_packet.id)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.id)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6ParamProblem.type%"))
-						print self.packets_sent_list.get(embedded_packet.id)[1],self.packets_sent_list.get(embedded_packet.id)[0],packets.payload.src,packets.sprintf("%ICMPv6ParamProblem.type% %ICMPv6ParamProblem.code%")
-				elif returned_packet.payload.haslayer(TCPerror):
-					embedded_packet=returned_packet.getlayer(TCPerror)
-					if self.packets_sent_list.has_key(embedded_packet.sport):
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6ParamProblem.type%"))
-						print self.packets_sent_list.get(embedded_packet.sport)[1],self.packets_sent_list.get(embedded_packet.sport)[0],packets.payload.src,packets.sprintf("%ICMPv6ParamProblem.type% %ICMPv6ParamProblem.code%")
-				elif returned_packet.payload.haslayer(UDPerror):
-					embedded_packet=returned_packet.getlayer(UDPerror)
-					if self.packets_sent_list.has_key(embedded_packet.sport):
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6ParamProblem.type%"))
-						print self.packets_sent_list.get(embedded_packet.sport)[1],self.packets_sent_list.get(embedded_packet.sport)[0],packets.payload.src,packets.sprintf("%ICMPv6ParamProblem.type% %ICMPv6ParamProblem.code%")
-			else:
+            elif packets.haslayer(ICMPv6ParamProblem):
+			if not self.scan_type==6:
                 		print packets.sprintf("%src% %IPv6.src% %ICMPv6ParamProblem.type% %ICMPv6ParamProblem.code%")
 				res.append(packets.sprintf("%IPv6.src%"))
 				if self.scan_type==1 or self.scan_type==5:
@@ -126,7 +64,7 @@ class mySniffer():
 				res.append(packets.sprintf("%ICMPv6ParamProblem.type%"))
 				res.append(packets.sprintf("%ICMPv6ParamProblem.code%"))
 				res.append(packets.sprintf("%ICMPv6ParamProblem.ptr%"))
-        	elif packets.haslayer(ICMPv6TimeExceeded):
+            elif packets.haslayer(ICMPv6TimeExceeded):
 			if self.scan_type==6:
 				returned_packet=packets.getlayer(ICMPv6TimeExceeded)
 				if returned_packet.haslayer(ICMPv6EchoRequest):
@@ -196,34 +134,8 @@ class mySniffer():
                 			print packets.sprintf("%src% %IPv6.src% ICMPv6 %ICMPv6TimeExceeded.type% %ICMPv6TimeExceeded.code% Enclosed Protocol:"),packets.payload.payload.sprintf("%nh%")
 					res.append(packets.payload.payload.payload.sprintf("Target: %dst%"))
 					res.append(packets.payload.payload.payload.sprintf("Enclosed protocol: %nh%"))
-        	elif packets.haslayer(ICMPv6PacketTooBig):
-			if self.scan_type==6:
-				returned_packet=packets.getlayer(CMPv6PacketTooBig)
-				if returned_packet.haslayer(ICMPv6EchoRequest):
-					embedded_packet=returned_packet.getlayer(ICMPv6EchoRequest)
-					if self.packets_sent_list.has_key(embedded_packet.id):
-						res.append(self.packets_sent_list.get(embedded_packet.id)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.id)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6PacketTooBig.type%"))
-						print self.packets_sent_list.get(embedded_packet.id)[1],self.packets_sent_list.get(embedded_packet.id)[0],packets.payload.src,packets.sprintf("%CMPv6PacketTooBig.type% %CMPv6PacketTooBig.code%")
-				elif returned_packet.payload.haslayer(TCPerror):
-					embedded_packet=returned_packet.getlayer(TCPerror)
-					if self.packets_sent_list.has_key(embedded_packet.sport):
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6PacketTooBig.type%"))
-						print self.packets_sent_list.get(embedded_packet.sport)[1],self.packets_sent_list.get(embedded_packet.sport)[0],packets.payload.src,packets.sprintf("%ICMPv6PacketTooBig.type% %ICMPv6PacketTooBig.code%")
-				elif returned_packet.payload.haslayer(UDPerror):
-					embedded_packet=returned_packet.getlayer(UDPerror)
-					if self.packets_sent_list.has_key(embedded_packet.sport):
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.sport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(returned_packet.sprintf("%ICMPv6PacketTooBig.type%"))
-						print self.packets_sent_list.get(embedded_packet.sport)[1],self.packets_sent_list.get(embedded_packet.sport)[0],packets.payload.src,packets.sprintf("%ICMPv6PacketTooBig.type% %ICMPv6PacketTooBig.code%")
-			else:
+            elif packets.haslayer(ICMPv6PacketTooBig):
+			if not self.scan_type==6:
                 		print packets.sprintf("%src% %IPv6.src% %ICMPv6PacketTooBig.type% %ICMPv6PacketTooBig.code% %ICMPv6PacketTooBig.mtu%")
 				res.append(packets.sprintf("%IPv6.src%"))
 				if self.scan_type==1 or self.scan_type==5:
@@ -232,7 +144,7 @@ class mySniffer():
 				res.append(packets.sprintf("%ICMPv6PacketTooBig.type%"))
 				res.append(packets.sprintf("%ICMPv6PacketTooBig.code%"))
 				res.append(packets.sprintf("%ICMPv6PacketTooBig.mtu%"))
-		elif packets.haslayer(IPv6ExtHdrRouting):
+	    elif packets.haslayer(IPv6ExtHdrRouting):
 			print packets.sprintf("%src% %IPv6.src% %IPv6.dst% %IPv6ExtHdrRouting.type% %IPv6ExtHdrRouting.addresses% %IPv6ExtHdrRouting.segleft%")
 			res.append(packets.sprintf("%IPv6.src%"))
 			if self.scan_type==1:
@@ -243,47 +155,11 @@ class mySniffer():
 			res.append(packets.sprintf("%IPv6ExtHdrRouting.segleft%"))
 			res.append(packets.sprintf("%IPv6ExtHdrRouting.addresses%"))
 			#res.append(packets.sprintf("%src%"))
-		elif packets.haslayer(IPv6ExtHdrFragment):
-			if self.scan_type==6:
-				returned_packet=packets.getlayer(IPv6ExtHdrFragment)
-				if returned_packet.haslayer(ICMPv6EchoReply):
-					embedded_packet=returned_packet.getlayer(ICMPv6EchoReply)
-					if self.packets_sent_list.has_key(embedded_packet.id):
-						res.append(self.packets_sent_list.get(embedded_packet.id)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.id)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(embedded_packet.sprintf("%ICMPv6EchoReply.type%"))
-						print self.packets_sent_list.get(embedded_packet.id)[1],self.packets_sent_list.get(embedded_packet.id)[0],packets.payload.src,packets.sprintf("%IPv6.nh%"),embedded_packet.sprintf("%ICMPv6EchoReply.type%")
-				elif returned_packet.haslayer(TCPError):
-					embedded_packet=returned_packet.getlayer(TCPError)
-					if self.packets_sent_list.has_key(embedded_packet.dport):
-						res.append(self.packets_sent_list.get(embedded_packet.dport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.dport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(embedded_packet.sprintf("%TCP.sport%"))
-						print self.packets_sent_list.get(embedded_packet.id)[1],self.packets_sent_list.get(embedded_packet.id)[0],packets.payload.src,packets.sprintf("%IPv6.nh%"),embedded_packet.sprintf("%TCP.sport%")
-				elif returned_packet.haslayer(UDPError):
-					embedded_packet=returned_packet.getlayer(UDPError)
-					if self.packets_sent_list.has_key(embedded_packet.dport):
-						res.append(self.packets_sent_list.get(embedded_packet.dport)[1])
-						res.append(self.packets_sent_list.get(embedded_packet.dport)[0])
-						res.append(packets.payload.sprintf("%IPv6.src%"))
-						res.append(embedded_packet.sprintf("%UDP.sport%"))
-						print self.packets_sent_list.get(embedded_packet.id)[1],self.packets_sent_list.get(embedded_packet.id)[0],packets.payload.src,packets.sprintf("%IPv6.nh%"),embedded_packet.sprintf("%UDP.sport%")
-			else:
+	    elif packets.haslayer(IPv6ExtHdrFragment):
 				returned_packet=packets.getlayer(IPv6ExtHdrFragment)
 				print returned_packet.summary()
 				res.append(returned_packet.summary())
-        	elif packets.haslayer(ICMPv6EchoReply) and not self.scan_type==3 and not self.scan_type==4 and not self.scan_type==7:
-			if self.scan_type==6:
-				#print packets.payload.payload.id
-				if self.packets_sent_list.has_key(packets.payload.payload.id):
-					res.append(self.packets_sent_list.get(packets.payload.payload.id)[1])
-					res.append(self.packets_sent_list.get(packets.payload.payload.id)[0])
-					res.append(packets.payload.sprintf("%IPv6.src%"))
-					res.append(packets.payload.payload.sprintf("%ICMPv6EchoReply.type%"))
-					print self.packets_sent_list.get(packets.payload.payload.id)[1],self.packets_sent_list.get(packets.payload.payload.id)[0],packets.payload.src,packets.sprintf("%ICMPv6EchoReply.type% %ICMPv6EchoReply.code%")
-			else:
+            elif packets.haslayer(ICMPv6EchoReply) and not self.scan_type==3 and not self.scan_type==4 and not self.scan_type==7 and not self.scan_type==6:
                 		print packets.sprintf("%src% %IPv6.src% %ICMPv6EchoReply.type%")
 				res.append(packets.sprintf("%IPv6.src%"))
 				if self.scan_type==1 or self.scan_type==5:
@@ -293,7 +169,7 @@ class mySniffer():
 				res.append(packets.sprintf("%ICMPv6EchoReply.id%"))
 				res.append(packets.sprintf("%ICMPv6EchoReply.data%"))
 				#res.append(packets.sprintf("%ICMPv6EchoReply.seq%"))
-        	elif packets.haslayer(ICMPv6EchoRequest) and self.scan_type==1:
+            elif packets.haslayer(ICMPv6EchoRequest) and self.scan_type==1:
                 	print packets.sprintf("%src% %IPv6.src% %ICMPv6EchoRequest.type%")
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
@@ -302,7 +178,7 @@ class mySniffer():
 			res.append(packets.sprintf("%ICMPv6EchoRequest.id%"))
 			res.append(packets.sprintf("%ICMPv6EchoRequest.data%"))
 			#res.append(packets.sprintf("%ICMPv6EchoRequest.seq%"))
-        	elif packets.haslayer(IPv6ExtHdrHopByHop) and (self.scan_type==1 or self.scan_type==8):
+            elif packets.haslayer(IPv6ExtHdrHopByHop) and (self.scan_type==1 or self.scan_type==8):
 			#print "Hop-by-Hop Header"
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
@@ -357,15 +233,7 @@ class mySniffer():
 			else:
                 		print packets.sprintf("%src% %IPv6.src% %ICMPv6MLReport2.type%")
 				#print packets.payload.show()
-        	elif packets.haslayer(TCP) and (self.scan_type==3 or self.scan_type==1 or self.scan_type==6):
-			if self.scan_type==6:
-				if self.packets_sent_list.has_key(packets.payload.payload.dport):
-					res.append(self.packets_sent_list.get(packets.payload.payload.dport)[1])
-					res.append(self.packets_sent_list.get(packets.payload.payload.dport)[0])
-					res.append(packets.payload.sprintf("%IPv6.src%"))
-					res.append(packets.payload.payload.sprintf("%TCP.sport%"))
-					print self.packets_sent_list.get(packets.payload.payload.dport)[1],self.packets_sent_list.get(packets.payload.payload.dport)[0],packets.payload.src,packets.sprintf("%TCP.sport% %TCP.dport%")
-			else:
+            elif packets.haslayer(TCP) and (self.scan_type==3 or self.scan_type==1):
                 		print packets.sprintf("%src% %IPv6.src% %dst% %IPv6.dst% TCP %TCP.sport% %TCP.dport% %TCP.flags%")
 				res.append(packets.sprintf("%IPv6.src%"))
 				if self.scan_type==1:
@@ -378,15 +246,7 @@ class mySniffer():
 					res.append(packets.sprintf(" TCP "))
 					res.append(packets.sprintf("%TCP.sport%"))
 					res.append(packets.sprintf("%TCP.flags%"))
-        	elif packets.haslayer(UDP) and (self.scan_type==4 or self.scan_type==1 or self.scan_type==6 or self.scan_type==8): #8 is for DHCPv6 operation
-			if self.scan_type==6:
-				if self.packets_sent_list.has_key(packets.payload.payload.dport):
-					res.append(self.packets_sent_list.get(packets.payload.payload.dport)[1])
-					res.append(self.packets_sent_list.get(packets.payload.payload.dport)[0])
-					res.append(packets.payload.sprintf("%IPv6.src%"))
-					res.append(packets.payload.payload.sprintf("%UDP.sport%"))
-					print self.packets_sent_list.get(packets.payload.payload.dport)[1],self.packets_sent_list.get(packets.payload.payload.dport)[0],packets.payload.src,packets.sprintf("%UDP.sport% %UDP.dport%")
-			layer4_header = packets.getlayer(UDP)
+            elif packets.haslayer(UDP) and (self.scan_type==4 or self.scan_type==1 or self.scan_type==8): #8 is for DHCPv6 operation
 			if (layer4_header.sport==546 and layer4_header.dport==547):
 				print "DHCPv6 packet"
 				if layer4_header.haslayer(DHCP6_Solicit):
@@ -406,7 +266,7 @@ class mySniffer():
 				else:	
 					res.append(packets.sprintf(" UDP "))
 					res.append(packets.sprintf("%UDP.sport%"))
-        	elif packets.haslayer(ICMPv6ND_NA) and self.scan_type==1:
+            elif packets.haslayer(ICMPv6ND_NA) and self.scan_type==1:
                 	print packets.sprintf("%src% %IPv6.src% %ICMPv6ND_NA.type% %ICMPv6ND_NA.tgt% ")
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
@@ -417,7 +277,7 @@ class mySniffer():
 			res.append(packets.sprintf("%ICMPv6ND_NA.S%"))
 			res.append(packets.sprintf("%ICMPv6ND_NA.O%"))
 			res.append(packets.sprintf("%ICMPv6ND_NA.tgt%"))
-        	elif packets.haslayer(ICMPv6ND_NS) and self.scan_type==1:
+            elif packets.haslayer(ICMPv6ND_NS) and self.scan_type==1:
                 	print packets.sprintf("%src% %IPv6.src% %ICMPv6ND_NS.type% %ICMPv6ND_NS.tgt% ")
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
@@ -425,7 +285,7 @@ class mySniffer():
 			res.append(packets.sprintf("%ICMPv6ND_NS.type%"))
 			#res.append(packets.sprintf("%ICMPv6ND_NS.code%"))
 			res.append(packets.sprintf("%ICMPv6ND_NS.tgt%"))
-        	elif packets.haslayer(ICMPv6ND_RA) and self.scan_type==1:
+            elif packets.haslayer(ICMPv6ND_RA) and self.scan_type==1:
                 	print packets.sprintf("%src% %IPv6.src% %ICMPv6ND_RA.type%")
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
@@ -449,14 +309,14 @@ class mySniffer():
 				res.append(packets.sprintf("%ICMPv6NDOptPrefixInfo.R%"))
 				res.append(int(packets.sprintf("%ICMPv6NDOptPrefixInfo.validlifetime%"),16))
 				res.append(int(packets.sprintf("%ICMPv6NDOptPrefixInfo.preferredlifetime%"),16))
-        	elif packets.haslayer(ICMPv6ND_RS) and self.scan_type==1:
+            elif packets.haslayer(ICMPv6ND_RS) and self.scan_type==1:
                 	print packets.sprintf("%src% %IPv6.src% %ICMPv6ND_RS.type%")
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
 			res.append(packets.sprintf(" ICMPv6 "))
 			res.append(packets.sprintf("%ICMPv6ND_RS.type%"))
 			res.append(packets.sprintf("%ICMPv6ND_RS.code%"))
-        	elif packets.haslayer(ICMPv6MLReport) and self.scan_type==1:
+            elif packets.haslayer(ICMPv6MLReport) and self.scan_type==1:
                		print packets.sprintf("%src% %IPv6.src% %ICMPv6MLReport.type% %ICMPv6MLReport.mladdr%")
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
@@ -465,14 +325,14 @@ class mySniffer():
 			res.append(packets.sprintf("%ICMPv6MLReport.code%"))
 			res.append(packets.sprintf("%ICMPv6MLReport.mrd%"))
 			res.append(packets.sprintf("%ICMPv6MLReport.mladdr%"))
-        	elif not self.scan_type==2 and not self.scan_type==5 and not self.scan_type==3 and not self.scan_type==6 and not self.scan_type==7:
+            elif not self.scan_type==2 and not self.scan_type==5 and not self.scan_type==3 and not self.scan_type==6 and not self.scan_type==7:
                 	print packets.sprintf("%src% %IPv6.src% %IPv6.nh%")
 			#res.append(packets.sprintf("%src%"))
 			res.append(packets.sprintf("%IPv6.src%"))
 			if self.scan_type==1:
 				res.append(packets.sprintf("%src%"))
 			res.append(packets.sprintf("%IPv6.nh%"))
-		if res:
-			self.q.put(res)
+	if res:
+	    self.q.put(res)
 version = '0.9'
 # End of sniffer_process.py

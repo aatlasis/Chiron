@@ -29,26 +29,26 @@ def dns_resolve_ipv6_addr(source_ip,hostname, dns_server, mac_gw,interface):
 		print "Not a valid IP address has been provided for a DNS server"
 		exit(0)
 	try:
-		if (p['DNS'].rcode == 0):			#No error
+	    if (p['DNS'].rcode == 0):			#No error
 			DNSBlocks = [ ]
 			if (p['DNS'].ancount > 0):		#If we have at least one answer from the answer block, process it
-				DNSBlocks.append(p[DNS].an)
+				DNSBlocks.append(p[scapy.layers.dns.DNS].an)
 			if (p['DNS'].arcount > 0):		#Likewise for the "additional" block
-				DNSBlocks.append(p[DNS].ar)
+				DNSBlocks.append(p[scapy.layers.dns.DNS].ar)
 			for OneAn in DNSBlocks:
-				while isinstance(OneAn,DNSRR):		#Somewhat equivalent:	while not isinstance(an, NoPayload):
+				while isinstance(OneAn,scapy.layers.dns.DNSRR):		#Somewhat equivalent:	while not isinstance(an, NoPayload):
 					if (OneAn.rclass == 1) and (OneAn.type == 28):		#"IN" class and "AAAA" answer
 						hostname_ipv6_address.append(OneAn.rdata)
 					#Move to the next DNS object in the "an" block
 					OneAn = OneAn.payload
-		else:
+	    else:
         		sys.stderr.write("unable to lookup " + hostname+". ")
-		if not hostname_ipv6_address:
+	    if not hostname_ipv6_address:
 			print "I couldn't find an IPv6 address for",hostname
-		return hostname_ipv6_address
+	    return hostname_ipv6_address
 	except:
-		print "No response from dns server",dns_server
-		exit(0)
+	    print "No response from dns server",dns_server
+	    exit(0)
 
 def multi_ping_scanner(source,interface, mytimeout, flood,flooding_interval):
 	for ifaces in scapy.arch.linux.in6_getifaddr(): 	#in6_getifaddr()  #return a list of IPs - ifaces, etc
