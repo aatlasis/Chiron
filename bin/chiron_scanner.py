@@ -222,7 +222,7 @@ def main():
 	parser.add_argument('-l4','--layer4', action="store", dest="layer4", default="icmpv6", help="the layer4 protocol")
 	parser.add_argument('-l4_data','--layer4_payload', action="store", dest="l4_data", default="", help="the payload of layer4")
 	parser.add_argument('-p','--destination_port', action="store", dest="destport", default=False, help="destination port of a TCP or UDP scan. If not defined, ports 1-1024 will be scanned")
-	parser.add_argument('-stimeout','--sniffer_timeout', action="store", dest="sniffer_timeout", default=5, help="The timeout (in seconds) when the integrated sniffer (IF used) will exit automatically.")
+	parser.add_argument('-stimeout','--sniffer_timeout', action="store", dest="sniffer_timeout", default=None, help="The timeout (in seconds) when the integrated sniffer (IF used) will exit automatically.")
 	parser.add_argument('-threads','--number_of_threads', action="store", dest="no_of_threads", default=1, help="The number of threads to use (for multi-threaded operation).")
 	parser.add_argument('-delay','--sending_delay', action="store", dest="delay", default=0, help="sending delay between two consecutive fragments")
 	parser.add_argument('-rh0','--route-type-0', action="store_true", dest="rh0", default=False, help="detect support of Type 0 Routing Headers")
@@ -261,25 +261,25 @@ def main():
 		myfilter = "ip6 and dst " + source_ip + " and not host " + values.dns_server
 		#myfilter = "dst " + source_ip + " and not host " + values.dns_server
 	if values.rec:	
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 1, packets_sent_list,q,float(values.sniffer_timeout),))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 1, packets_sent_list,q,values.sniffer_timeout,))
 	elif values.mpn:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 5, packets_sent_list,q,float(values.sniffer_timeout),))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 5, packets_sent_list,q,values.sniffer_timeout,))
 	elif values.pn:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 2, packets_sent_list,q,float(values.sniffer_timeout),))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 2, packets_sent_list,q,values.sniffer_timeout,))
 	elif values.sS or values.sA or values.sX or values.sR or values.sF or values.sN:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 3, packets_sent_list,q,float(values.sniffer_timeout),))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 3, packets_sent_list,q,values.sniffer_timeout,))
 	elif values.sU:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 4, packets_sent_list,q,float(values.sniffer_timeout),))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 4, packets_sent_list,q,values.sniffer_timeout,))
 	elif values.tr_gen:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 6, packets_sent_list,q,float(values.sniffer_timeout),))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 6, packets_sent_list,q,values.sniffer_timeout,))
 	elif values.rh0:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 7, packets_sent_list,q,float(values.sniffer_timeout),))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 7, packets_sent_list,q,values.sniffer_timeout,))
 	elif not values.pmtu:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 0, packets_sent_list,q,float(values.sniffer_timeout),))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 0, packets_sent_list,q,values.sniffer_timeout,))
 	if not values.pmtu: #IN THIS CASE SNIFFER IS NOT REQUIRED BECAUSE WE USE THE SEND/RECEIVE FUNCTIONS OF SCAPY
 		pr.daemon = True
 		pr.start()
-                packets_sent_list.close()
+                #packets_sent_list.close()
                 #packets_sent_list.join_thread()
 		time.sleep(1)	#to make sure than sniffer has started before we proceed, otherwise you may miss some traffic
 
@@ -291,14 +291,22 @@ def main():
 	###THE ATTACKS WILL FOLLOW NOW###
 	if values.rec:
 		try:
-			time.sleep(float(values.sniffer_timeout))
+                        if not values.sniffer_timeout:
+                            timeout=float(values.sniffer_timeout)
+                        else:
+                            timeout=5
+			time.sleep(timeout)
         	except KeyboardInterrupt:
                 	print "\n\nExiting on user's request..."
 			print_scanning_results(values,q,source_ip)
                 	exit(1)
 		print_scanning_results(values,q,source_ip)
 	elif values.mpn:
-		scanners.multi_ping_scanner(source_ip,values.interface, float(values.sniffer_timeout),values.flood, values.flooding_interval)
+                if not values.sniffer_timeout:
+                    timeout=float(values.sniffer_timeout)
+                else:
+                    timeout=5
+		scanners.multi_ping_scanner(source_ip,values.interface,timeout,values.flood, values.flooding_interval)
 		time.sleep(1)	#to make sure than sniffer has ended 
 		if pr:
 			try:
@@ -307,7 +315,7 @@ def main():
 				print 'Received Ctrl-C'
 	 			alive_results(q,source_ip,values.output_file)
 				sys.exit(1)
-	 	alive_results(q,source_ip,values.output_file)
+	 	amultiprocessing.current_process().namelive_results(q,source_ip,values.output_file)
 	elif values.dns:
 		ip_list,IPv6_scope_defined = definitions.define_destinations(values.dns_server,values.input_file,values.smart_scan,values.prefix,values.input_combinations)
 		gw_mac = auxiliary_functions.get_gw_mac(values.gateway,values.interface,ip_list,source_ip) 
@@ -381,8 +389,10 @@ def main():
 			pr2 = multiprocessing.Process(target=Worker, args=(values,source_ip,mac_source,list_of_next_headers,list_of_offsets,list_of_fragment_lengths,list_of_fragment_m_bits,gw_mac,queue,IPv6_scope_defined,packets_sent_list,i,))
 			pr2.daemon = True
 			pr2.start()
-			print "Worker %d Created!"%i
+                        print "Worker %d Created!"%i
 			pr2.join()
+                    print "Stop sniffing..."
+                    pr.terminate()
 		    if pr:
 			try:
 				pr.join()
