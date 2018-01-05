@@ -14,7 +14,7 @@ class mySniffer():
 	self.sniffer_timeout=sniffer_timeout
 	print "Starting sniffing..."
 	print "Sniffer filter is",self.filter
-	print "I will sniff for",self.sniffer_timeout,"seconds, unless interrupted by Ctrl-C"
+	#print "I will sniff for",self.sniffer_timeout,"seconds, unless interrupted by Ctrl-C"
         self.packets_sent_list={}
         #self.packets_sent_list=self.packets_list.get()
         #print self.packets_sent_list
@@ -23,7 +23,10 @@ class mySniffer():
         #    #print self.packets_sent_list
         #except:
         #    print "continue"
-    	sniff(filter=self.filter, iface=self.interface, prn=self.handler, store=0, timeout=self.sniffer_timeout)
+        if self.sniffer_timeout:
+    	    sniff(filter=self.filter, iface=self.interface, prn=self.handler, store=0, timeout=float(self.sniffer_timeout))
+        else:
+    	    sniff(filter=self.filter, iface=self.interface, prn=self.handler, store=0, count=0, timeout=None)
     	#sniff(iface=self.interface, prn=self.handler, store=0, timeout=self.sniffer_timeout)
     def handler(self,packets):
 	res=[]
