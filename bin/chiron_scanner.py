@@ -392,10 +392,13 @@ def main():
                         print "Worker %d Created!"%i
 			pr2.join()
                     print "Stop sniffing..."
+                    time.sleep(2) #to ensure that we shall capture potential late responses. 
                     pr.terminate()
 		    if pr:
 			try:
-				pr.join()
+				pr .join()
+                                #print "Stop sniffing..."
+                                #pr.terminate()
 			except KeyboardInterrupt:
     				print "Exiting on user's request..."
 				print_scanning_results(values,q,source_ip)
