@@ -55,24 +55,17 @@ def print_all_results(myresults,opened_tcp_list):
 			print r
 
 #traceroute results
-def traceroute_results(results):
+def traceroute_results(results,packets_sent_list):
 	routes={}
-	for r in results:
-		if not routes.has_key(r[0]):
-			path=[]
-			path.append((r[1],r[2],r[3]))
-			routes[r[0]]=path
-		else:
-			found=False
-			path=routes.get(r[0])
-			for p in path:
-				if p[1]==r[2]:
-					if r[3]==p[2]: #in case ICMPv6 Error messages are different from same source
-						found=True
-						break
-			if not found:
-				path.append((r[1],r[2],r[3]))
-				routes[r[0]]=path
+        for p in packets_sent_list:
+            route=[]
+            for r in p:
+                #print r,p[r]
+                for r2 in results:
+                    #if int(r2[3],16)==r:
+                    if int(r2[3])==r:
+                        route.append((p[r][0],r2[0]))
+            routes[p.itervalues().next()[1]]=sorted(route)
 	return routes
 
 def make_eth_link_global_pairs(myresults):
