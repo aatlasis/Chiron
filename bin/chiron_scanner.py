@@ -125,7 +125,7 @@ class Worker() :
 							if self.values.layer4=="tcp":
 							    if destports==-1:
 								destports=80
-                                                            print "Traceroute using TCP",dst
+                                                            print "Traceroute using TCP",destports
 							    for hop_limit in range(self.values.minttl,self.values.maxttl+1):
 							        source_port=random.randrange(1,65535,1)
 							        while packets_list.has_key(source_port):
@@ -139,7 +139,7 @@ class Worker() :
 							elif self.values.layer4=="udp":
 							    if destports==-1:
 								destports=53
-                                                            print "Traceroute using UDP",dst
+                                                            print "Traceroute using UDP",destports
 							    for hop_limit in range(self.values.minttl,self.values.maxttl+1):
 							        source_port=random.randrange(1,65535,1)
 								while packets_list.has_key(source_port):
@@ -248,39 +248,26 @@ def main():
 	###START SNIFFING###
 	q = multiprocessing.Queue()
 	packets_sent_list = multiprocessing.Queue()
-	#packets_sent_list = multiprocessing.JoinableQueue()
-        #packets_sent_list.join()
 	pr=None
-	if values.rec or values.mpn:
-		myfilter = "ip6"
-	elif values.pn:
-		myfilter = "ip6 and dst " + source_ip + " and icmp6"
-	elif values.rh0:
-		myfilter = "ip6 and dst " + source_ip + " and src " + source_ip + " and not host " + values.dns_server
-	else:
-		myfilter = "ip6 and dst " + source_ip + " and not host " + values.dns_server
-		#myfilter = "dst " + source_ip + " and not host " + values.dns_server
 	if values.rec:	
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 1, packets_sent_list,q,values.sniffer_timeout,))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 1,q,values.sniffer_timeout,source_ip,values.dns_server,))
 	elif values.mpn:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 5, packets_sent_list,q,values.sniffer_timeout,))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 5,q,values.sniffer_timeout,source_ip,values.dns_server,))
 	elif values.pn:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 2, packets_sent_list,q,values.sniffer_timeout,))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 2,q,values.sniffer_timeout,source_ip,values.dns_server,))
 	elif values.sS or values.sA or values.sX or values.sR or values.sF or values.sN:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 3, packets_sent_list,q,values.sniffer_timeout,))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 3,q,values.sniffer_timeout,source_ip,values.dns_server,))
 	elif values.sU:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 4, packets_sent_list,q,values.sniffer_timeout,))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 4,q,values.sniffer_timeout,source_ip,values.dns_server,))
 	elif values.tr_gen:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 6, packets_sent_list,q,values.sniffer_timeout,))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 6,q,values.sniffer_timeout,source_ip,values.dns_server,))
 	elif values.rh0:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 7, packets_sent_list,q,values.sniffer_timeout,))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 7,q,values.sniffer_timeout,source_ip,values.dns_server,))
 	elif not values.pmtu:
-    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 0, packets_sent_list,q,values.sniffer_timeout,))
+    		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 0,q,values.sniffer_timeout,source_ip,values.dns_server,))
 	if not values.pmtu: #IN THIS CASE SNIFFER IS NOT REQUIRED BECAUSE WE USE THE SEND/RECEIVE FUNCTIONS OF SCAPY
 		pr.daemon = True
 		pr.start()
-                #packets_sent_list.close()
-                #packets_sent_list.join_thread()
 		time.sleep(1)	#to make sure than sniffer has started before we proceed, otherwise you may miss some traffic
 
         #if pr:
@@ -395,6 +382,7 @@ def main():
                     time.sleep(2) #to ensure that we shall capture potential late responses. 
                     pr.terminate()
 		    if pr:
+                        complete_packets_list=[]
 			try:
 				pr .join()
                                 #print "Stop sniffing..."
@@ -403,9 +391,18 @@ def main():
     				print "Exiting on user's request..."
 				print_scanning_results(values,q,source_ip)
     				exit(1)	
-			print_scanning_results(values,q,source_ip)
+                        if values.tr_gen:
+                            while not packets_sent_list.empty():
+                                try:
+                                    packets_list=packets_sent_list.get(timeout=2)
+                                    complete_packets_list.append(packets_list)
+                                except Empty:
+                                    continue
+                        else:
+                            packets_list={}
+			print_scanning_results(values,q,source_ip,complete_packets_list)
 
-def print_scanning_results(values,q,source_ip):
+def print_scanning_results(values,q,source_ip,packets_sent_list):
 	my_results=[]
 	while not q.empty():
     		my_results.append(q.get())
@@ -421,7 +418,7 @@ def print_scanning_results(values,q,source_ip):
 		print "IPv6 address\t\t\t\t\tProtocol\t\tID"
 		print "-------------------------------------------"
 	elif values.tr_gen:
-		routes=results.traceroute_results(my_results)
+		routes=results.traceroute_results(my_results,packets_sent_list)
 		for p in routes.keys():
 		    print "\n",p,routes.get(p)
 

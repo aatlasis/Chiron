@@ -76,8 +76,6 @@ def create_random_prefixes(prefixes_queue):
 		prefixes_queue.put(scapy.layers.inet6.RandIP6("2001:db8:1:*")+"::")
 
 def main():
-	packets_sent_list={}
-
 	#LET'S PARSE THE ARGUMENTS FIRST
 	parser = argparse.ArgumentParser(version='0.8',description='An IPv6 neighbor discovery packet tool with enhanced capabilities and flexibility.')
 	parser.add_argument('-mrec','--mld-recon', action="store_true", dest="mld_recon", default=0, help="perform MLD Recon")
@@ -328,15 +326,13 @@ def main():
 				pr = False
 				if values.rsol:
 					q = multiprocessing.Queue()
-					myfilter = "ip6 and not src " + source_ip
-    					pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 1, packets_sent_list,q,float(values.sniffer_timeout),))
+    					pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 1,q,float(values.sniffer_timeout),source_ip,values.dns_server,))
 					pr.daemon = True
 					pr.start()
 					time.sleep(1)
 				elif values.mld_recon:
 					q = multiprocessing.Queue()
-					myfilter = "ip6 and not src " + source_ip
-    					pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(myfilter, values.interface, 8,  packets_sent_list,q,float(values.sniffer_timeout),))
+    					pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 8,q,float(values.sniffer_timeout),source_ip,values.dns_server,))
 					pr.daemon = True
 					pr.start()
 
