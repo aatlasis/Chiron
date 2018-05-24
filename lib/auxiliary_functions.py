@@ -58,7 +58,8 @@ def find_single_mac(source, destination, interface):
 		if p:
 			return p.lladdr
 		else:
-			for ifaces in scapy.layers.inet6.in6_getifaddr(): 	 #in6_getifaddr()  #return a list of IPs - ifaces, etc
+			#for ifaces in scapy.layers.inet6.in6_getifaddr(): 	 #in6_getifaddr()  #return a list of IPs - ifaces, etc
+			for ifaces in scapy.route6.in6_getifaddr(): 	 #in6_getifaddr()  #return a list of IPs - ifaces, etc
 				if ifaces[0]==destination:
 					return scapy.layers.l2.get_if_hwaddr(interface)
 
