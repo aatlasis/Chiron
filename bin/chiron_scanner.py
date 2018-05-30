@@ -278,7 +278,7 @@ def main():
 	###THE ATTACKS WILL FOLLOW NOW###
 	if values.rec:
 		try:
-                        if not values.sniffer_timeout:
+                        if values.sniffer_timeout:
                             timeout=float(values.sniffer_timeout)
                         else:
                             timeout=5
@@ -289,7 +289,7 @@ def main():
                 	exit(1)
 		print_scanning_results(values,q,source_ip)
 	elif values.mpn:
-                if not values.sniffer_timeout:
+                if values.sniffer_timeout:
                     timeout=float(values.sniffer_timeout)
                 else:
                     timeout=5
