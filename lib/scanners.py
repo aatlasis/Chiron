@@ -63,7 +63,7 @@ def multi_ping_scanner(source,interface, mytimeout, flood,flooding_interval):
 			packet=scapy.layers.inet6.IPv6(src=ifaces[0],dst="ff02::1")/scapy.layers.inet6.IPv6ExtHdrDestOpt(options=scapy.layers.inet6.HBHOptUnknown(otype=128,optdata='x'))/create_layer4.icmpv6(128,0,"")
 			scapy.sendrecv.sendp(scapy.layers.l2.Ether(dst="33:33:00:00:00:01")/packet,iface=interface, loop=flood,inter=flooding_interval)
 			#Send an unknown (Fake) IPv6 Extension Header
-			packet=scapy.layers.inet6.IPv6(src=ifaces[0],dst="ff02::1")/scapy.layers.inet6.IPv6ExtHdrFake()/create_layer4.icmpv6(128,0,"")
+			packet=scapy.layers.inet6.IPv6(src=ifaces[0],dst="ff02::1",nh=200,)/scapy.layers.inet6.IPv6ExtHdrDestOpt()/create_layer4.icmpv6(128,0,"")
 			scapy.sendrecv.sendp(scapy.layers.l2.Ether(dst="33:33:00:00:00:01")/packet,iface=interface, loop=flood,inter=flooding_interval)
 
 def ping_scanner(source,destination,ether_dst,interface,icmp_payload):
