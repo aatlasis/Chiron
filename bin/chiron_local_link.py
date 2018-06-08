@@ -224,10 +224,11 @@ def main():
 
 	ip_list,IPv6_scope_defined = definitions.define_destinations(values.destination,values.input_file,values.smart_scan,values.prefix,values.input_combinations)
 
-        if not values.target_mac:
-		gw_mac = auxiliary_functions.get_gw_mac(values.gateway,values.interface,ip_list,source_ip)
-	else:
-		gw_mac=values.target_mac
+        ####GATEWAY FOR THE LOCAL LINK IS NOT NEEDED
+        #if not values.target_mac:
+	#	gw_mac = auxiliary_functions.get_gw_mac(values.gateway,values.interface,ip_list,source_ip)
+	#else:
+	gw_mac=values.target_mac
 
 	###THE ATTACKS WILL FOLLOW NOW###
 	##If router redirection, check for the parameters##
@@ -377,7 +378,7 @@ def main():
 					print "First, I will prepare",int(values.no_prefix_info),"prefixes"
 					prefixes = multiprocessing.Queue()
 					for i in range(int(values.no_prefix_info)*int(values.no_of_threads)):
-						prefixes.put(scapy.layers.inet6.RandIP6("2001:db8:1:*")+"::")
+						prefixes.put(str(scapy.layers.inet6.RandIP6("2001:db8:1:*"))+"::")
 					print "prefix info prepared"
 					myprocesses2=[]
 					for j in range(int(values.no_of_threads)):
