@@ -285,9 +285,9 @@ def main():
 			time.sleep(timeout)
         	except KeyboardInterrupt:
                 	print "\n\nExiting on user's request..."
-			print_scanning_results(values,q,source_ip)
+			print_scanning_results(values,q,source_ip,[])
                 	exit(1)
-		print_scanning_results(values,q,source_ip)
+		print_scanning_results(values,q,source_ip,[])
 	elif values.mpn:
                 if values.sniffer_timeout:
                     timeout=float(values.sniffer_timeout)
@@ -389,7 +389,7 @@ def main():
                                 #pr.terminate()
 			except KeyboardInterrupt:
     				print "Exiting on user's request..."
-				print_scanning_results(values,q,source_ip)
+				print_scanning_results(values,q,source_ip,complete_packets_list)
     				exit(1)	
                         if values.tr_gen:
                             while not packets_sent_list.empty():
