@@ -228,18 +228,18 @@ def mldv2_report(mldres1,mldreserved,my_number_of_multicast_address_records,list
 					mldsaddresses=[]
 					mldsaddresses.append(mld_saddresses)
 					mldsaddresses=mld_saddresses.split('-')
-					p=scapy.layers.inet6.ICMPv6MLDMultAddrRec(rtype=mldrtype, auxdatalen=mld_auxdatalen, no_of_sources=mld_no_of_sources, dst=mldaddr, saddresses=mldsaddresses,auxdata=mld_auxdata)
+					p=scapy.layers.inet6.ICMPv6MLDMultAddrRec(rtype=mldrtype, auxdata_len=mld_auxdatalen, sources_number=mld_no_of_sources, dst=mldaddr, sources=mldsaddresses,auxdata=mld_auxdata)
 				else:
-					p=scapy.layers.inet6.ICMPv6MLDMultAddrRec(rtype=mldrtype, auxdatalen=mld_auxdatalen, no_of_sources=mld_no_of_sources, dst=mldaddr,auxdata=mld_auxdata)
+					p=scapy.layers.inet6.ICMPv6MLDMultAddrRec(rtype=mldrtype, auxdata_len=mld_auxdatalen, sources_number=mld_no_of_sources, dst=mldaddr,auxdata=mld_auxdata)
 			else:
 				if l[1].has_key('saddresses'):
 					mld_saddresses=l[1]['saddresses']
 					mldsaddresses=[]
 					mldsaddresses.append(mld_saddresses)
 					mldsaddresses=mld_saddresses.split('-')
-					p=p/scapy.layers.inet6.ICMPv6MLDMultAddrRec(rtype=mldrtype, auxdatalen=mld_auxdatalen, no_of_sources=mld_no_of_sources, dst=mldaddr, saddresses=mldsaddresses,auxdata=mld_auxdata)
+					p=p/scapy.layers.inet6.ICMPv6MLDMultAddrRec(rtype=mldrtype, auxdata_len=mld_auxdatalen, sources_number=mld_no_of_sources, dst=mldaddr, sources=mldsaddresses,auxdata=mld_auxdata)
 				else:
-					p=p/scapy.layers.inet6.ICMPv6MLDMultAddrRec(rtype=mldrtype, auxdatalen=mld_auxdatalen, no_of_sources=mld_no_of_sources, dst=mldaddr,auxdata=mld_auxdata)
+					p=p/scapy.layers.inet6.ICMPv6MLDMultAddrRec(rtype=mldrtype, auxdata_len=mld_auxdatalen, sources_number=mld_no_of_sources, dst=mldaddr,auxdata=mld_auxdata)
 
 	if my_number_of_multicast_address_records:
 		number_of_multicast_address_records=int(my_number_of_multicast_address_records)	
@@ -247,25 +247,25 @@ def mldv2_report(mldres1,mldreserved,my_number_of_multicast_address_records,list
 	if list_of_multicast_address_records:
 		if router_alert:
 			if layer4_data:
-				header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,no_of_multicast_address_records=number_of_multicast_address_records)/p/scapy.packet.Raw(layer4_data)
+				header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,records_number=number_of_multicast_address_records)/p/scapy.packet.Raw(layer4_data)
 			else:
-				header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,no_of_multicast_address_records=number_of_multicast_address_records)/p
+				header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,records_number=number_of_multicast_address_records)/p
 		else:
 			if layer4_data:
-				header=scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,no_of_multicast_address_records=number_of_multicast_address_records)/p/scapy.packet.Raw(layer4_data)
+				header=scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,records_number=number_of_multicast_address_records)/p/scapy.packet.Raw(layer4_data)
 			else:
-				header=scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,no_of_multicast_address_records=number_of_multicast_address_records)/p
+				header=scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,records_number=number_of_multicast_address_records)/p
 	else:
 		if router_alert:
 			if layer4_data:
-				header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,no_of_multicast_address_records=number_of_multicast_address_records)/scapy.packet.Raw(layer4_data)
+				header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,records_number=number_of_multicast_address_records)/scapy.packet.Raw(layer4_data)
 			else:
-				header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,no_of_multicast_address_records=number_of_multicast_address_records)
+				header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,records_number=number_of_multicast_address_records)
 		else:
 			if layer4_data:
-				header=scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,no_of_multicast_address_records=number_of_multicast_address_records)/scapy.packet.Raw(layer4_data)
+				header=scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,records_number=number_of_multicast_address_records)/scapy.packet.Raw(layer4_data)
 			else:
-				header=scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,no_of_multicast_address_records=number_of_multicast_address_records)
+				header=scapy.layers.inet6.ICMPv6MLReport2(res=mldres1,reserved=mldreserved,records_number=number_of_multicast_address_records)
 	return header
 
 def mldv1_done(mldcode,mldmrd,mldreserved,mldmladdr,layer4_data,router_alert):
@@ -297,14 +297,14 @@ def mldv1_query(mldcode,mldmrd,mldreserved,mldmladdr,layer4_data,router_alert):
 def mldv2_query(mldcode,mldmrd,mldreserved,mldmladdr,layer4_data,router_alert, myresv, s_flag, myqrv, myqqic, number_of_sources, myaddresses):
 	if router_alert:
 		if layer4_data:
-			header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLQuery2(code=mldcode,mrd=mldmrd,reserved=mldreserved,mladdr=mldmladdr,Resv=myresv, S=s_flag, QRV=myqrv, QQIC=myqqic, no_of_sources=number_of_sources,addresses=myaddresses)/scapy.packet.Raw(layer4_data)
+			header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLQuery2(code=mldcode,mrd=mldmrd,reserved=mldreserved,mladdr=mldmladdr,Resv=myresv, S=s_flag, QRV=myqrv, QQIC=myqqic, sources_number=number_of_sources,sources=myaddresses)/scapy.packet.Raw(layer4_data)
 		else:
-			header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLQuery2(code=mldcode,mrd=mldmrd,reserved=mldreserved,mladdr=mldmladdr,Resv=myresv, S=s_flag, QRV=myqrv, QQIC=myqqic, no_of_sources=number_of_sources,addresses=myaddresses)
+			header=scapy.layers.inet6.IPv6ExtHdrHopByHop(nh=58,options=scapy.layers.inet6.RouterAlert())/scapy.layers.inet6.ICMPv6MLQuery2(code=mldcode,mrd=mldmrd,reserved=mldreserved,mladdr=mldmladdr,Resv=myresv, S=s_flag, QRV=myqrv, QQIC=myqqic, sources_number=number_of_sources,sources=myaddresses)
 	else:
 		if layer4_data:
-			header=scapy.layers.inet6.ICMPv6MLQuery2(code=mldcode,mrd=mldmrd,reserved=mldreserved,mladdr=mldmladdr,Resv=myresv, S=s_flag, QRV=myqrv, QQIC=myqqic, no_of_sources=number_of_sources,addresses=myaddresses)/scapy.packet.Raw(layer4_data)
+			header=scapy.layers.inet6.ICMPv6MLQuery2(code=mldcode,mrd=mldmrd,reserved=mldreserved,mladdr=mldmladdr,Resv=myresv, S=s_flag, QRV=myqrv, QQIC=myqqic, sources_number=number_of_sources,sources=myaddresses)/scapy.packet.Raw(layer4_data)
 		else:
-			header=scapy.layers.inet6.ICMPv6MLQuery2(code=mldcode,mrd=mldmrd,reserved=mldreserved,mladdr=mldmladdr,Resv=myresv, S=s_flag, QRV=myqrv, QQIC=myqqic, no_of_sources=number_of_sources,addresses=myaddresses)
+			header=scapy.layers.inet6.ICMPv6MLQuery2(code=mldcode,mrd=mldmrd,reserved=mldreserved,mladdr=mldmladdr,Resv=myresv, S=s_flag, QRV=myqrv, QQIC=myqqic, sources_number=number_of_sources,sources=myaddresses)
 	return header
 
 def icmpv6_router_solicitation(source_mac,reserved_field,interface):
