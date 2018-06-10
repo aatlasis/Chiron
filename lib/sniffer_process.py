@@ -20,10 +20,12 @@ class mySniffer():
     def handler(self,packets):
 	res=[]
         if packets.haslayer(IPv6):
+            #print "Scan type=", self.scan_type
             #print self.scan_type,packets.summary()
             if (self.scan_type==1 or self.scan_type==5 or (packets[IPv6].dst==self.source_ip and not packets[IPv6].src==self.dns_server)):
+            #if (self.scan_type==1 or self.scan_type==5 and not packets[IPv6].src==self.dns_server):
                 if packets.haslayer(ICMPv6DestUnreach):
-			#if not self.scan_type==6: #NOT NEEDED
+			if not self.scan_type==6: #NOT NEEDED
 				res.append(packets.sprintf("%IPv6.src%"))
 				if self.scan_type==1 or self.scan_type==5:
 					res.append(packets.sprintf("%src%"))
@@ -110,7 +112,7 @@ class mySniffer():
 					res.append(packets.payload.payload.payload.sprintf("Target: %dst%"))
 					res.append(packets.payload.payload.payload.sprintf("Enclosed protocol: %nh%"))
                 elif packets.haslayer(ICMPv6PacketTooBig):
-			#if not self.scan_type==6:  NOT NEEDED
+			if not self.scan_type==6:  #NOT NEEDED
                 		print packets.sprintf("%src% %IPv6.src% -> %IPv6.dst% %ICMPv6PacketTooBig.type% %ICMPv6PacketTooBig.code% %ICMPv6PacketTooBig.mtu%")
 				res.append(packets.sprintf("%IPv6.src%"))
 				if self.scan_type==1 or self.scan_type==5:
@@ -134,7 +136,7 @@ class mySniffer():
 				returned_packet=packets.getlayer(IPv6ExtHdrFragment)
 				print returned_packet.summary()
 				res.append(returned_packet.summary())
-            elif packets.haslayer(ICMPv6EchoReply) and not self.scan_type==3 and not self.scan_type==4 and not self.scan_type==7 and not self.scan_type==6:
+                elif packets.haslayer(ICMPv6EchoReply) and not self.scan_type==3 and not self.scan_type==4 and not self.scan_type==7 and not self.scan_type==6:
                 		print packets.sprintf("%src% %IPv6.src% -> %IPv6.dst% %ICMPv6EchoReply.type%")
 				res.append(packets.sprintf("%IPv6.src%"))
 				if self.scan_type==1 or self.scan_type==5:
@@ -144,7 +146,7 @@ class mySniffer():
 				res.append(packets.sprintf("%ICMPv6EchoReply.id%"))
 				res.append(packets.sprintf("%ICMPv6EchoReply.data%"))
 				#res.append(packets.sprintf("%ICMPv6EchoReply.seq%"))
-            elif packets.haslayer(ICMPv6EchoRequest) and self.scan_type==1:
+                elif packets.haslayer(ICMPv6EchoRequest) and self.scan_type==1:
                 	print packets.sprintf("%src% %IPv6.src% -> %IPv6.dst% %ICMPv6EchoRequest.type%")
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
@@ -153,7 +155,7 @@ class mySniffer():
 			res.append(packets.sprintf("%ICMPv6EchoRequest.id%"))
 			res.append(packets.sprintf("%ICMPv6EchoRequest.data%"))
 			#res.append(packets.sprintf("%ICMPv6EchoRequest.seq%"))
-            elif packets.haslayer(IPv6ExtHdrHopByHop) and (self.scan_type==1 or self.scan_type==8):
+                elif packets.haslayer(IPv6ExtHdrHopByHop) and (self.scan_type==1 or self.scan_type==8):
 			#print "Hop-by-Hop Header"
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
@@ -207,7 +209,7 @@ class mySniffer():
 			else:
                 		print packets.sprintf("%src% %IPv6.src% -> %IPv6.dst% %ICMPv6MLReport2.type%")
 				#print packets.payload.show()
-            elif packets.haslayer(TCP) and (self.scan_type==3 or self.scan_type==1):
+                elif packets.haslayer(TCP) and (self.scan_type==3 or self.scan_type==1):
                 		print packets.sprintf("%src% %IPv6.src% %dst% -> %IPv6.dst% TCP %TCP.sport% %TCP.dport% %TCP.flags%")
 				res.append(packets.sprintf("%IPv6.src%"))
 				if self.scan_type==1:
@@ -220,7 +222,7 @@ class mySniffer():
 					res.append(packets.sprintf(" TCP "))
 					res.append(packets.sprintf("%TCP.sport%"))
 					res.append(packets.sprintf("%TCP.flags%"))
-            elif packets.haslayer(UDP) and (self.scan_type==4 or self.scan_type==1 or self.scan_type==8): #8 is for DHCPv6 operation
+                elif packets.haslayer(UDP) and (self.scan_type==4 or self.scan_type==1 or self.scan_type==8): #8 is for DHCPv6 operation
                         layer4_header=packets.getlayer(UDP)
 			if (layer4_header.sport==546 and layer4_header.dport==547):
 				print "DHCPv6 packet"
@@ -241,7 +243,7 @@ class mySniffer():
 				else:	
 					res.append(packets.sprintf(" UDP "))
 					res.append(packets.sprintf("%UDP.sport%"))
-            elif packets.haslayer(ICMPv6ND_NA) and self.scan_type==1:
+            if packets.haslayer(ICMPv6ND_NA) and self.scan_type==1:
                 	print packets.sprintf("%src% %IPv6.src%  -> %IPv6.dst% %ICMPv6ND_NA.type% %ICMPv6ND_NA.tgt% ")
 			res.append(packets.sprintf("%IPv6.src%"))
 			res.append(packets.sprintf("%src%"))
