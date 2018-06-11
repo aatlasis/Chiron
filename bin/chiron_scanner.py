@@ -265,16 +265,12 @@ def main():
     		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 7,q,values.sniffer_timeout,source_ip,values.dns_server,))
 	elif not values.pmtu:
     		pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 0,q,values.sniffer_timeout,source_ip,values.dns_server,))
+
 	if not values.pmtu: #IN THIS CASE SNIFFER IS NOT REQUIRED BECAUSE WE USE THE SEND/RECEIVE FUNCTIONS OF SCAPY
 		pr.daemon = True
 		pr.start()
 		time.sleep(1)	#to make sure than sniffer has started before we proceed, otherwise you may miss some traffic
 
-        #if pr:
-	#    try:
-	#        pr.join()
-	#    except KeyboardInterrupt:
-    	#        print "Exiting on user's request..."
 	###THE ATTACKS WILL FOLLOW NOW###
 	if values.rec:
 		try:
@@ -289,20 +285,13 @@ def main():
                 	exit(1)
 		print_scanning_results(values,q,source_ip,[])
 	elif values.mpn:
+		scanners.multi_ping_scanner(source_ip,values.interface,values.flood, values.flooding_interval)
                 if values.sniffer_timeout:
-                    timeout=float(values.sniffer_timeout)
+                        timeout=float(values.sniffer_timeout)
                 else:
-                    timeout=5
-		scanners.multi_ping_scanner(source_ip,values.interface,timeout,values.flood, values.flooding_interval)
-		time.sleep(1)	#to make sure than sniffer has ended 
-		if pr:
-			try:
-				pr.join()
-			except KeyboardInterrupt:
-				print 'Received Ctrl-C'
-	 			alive_results(q,source_ip,values.output_file)
-				sys.exit(1)
-	 	amultiprocessing.current_process().namelive_results(q,source_ip,values.output_file)
+                        timeout=3
+                time.sleep(timeout)
+	 	alive_results(q,source_ip,values.output_file)
 	elif values.dns:
 		ip_list,IPv6_scope_defined = definitions.define_destinations(values.dns_server,values.input_file,values.smart_scan,values.prefix,values.input_combinations)
 		gw_mac = auxiliary_functions.get_gw_mac(values.gateway,values.interface,ip_list,source_ip) 
@@ -363,6 +352,7 @@ def main():
 				if not portlist:
 					portlist=[str(x) for x in range(1,1025)] 
 				destports = ','.join(portlist)
+
 		    ###LET'S DO THE JOB NOW
 		    queue = Queue.Queue()
 		    print "Let's start scanning"
@@ -384,7 +374,7 @@ def main():
 		    if pr:
                         complete_packets_list=[]
 			try:
-				pr .join()
+				pr.join()
                                 #print "Stop sniffing..."
                                 #pr.terminate()
 			except KeyboardInterrupt:
