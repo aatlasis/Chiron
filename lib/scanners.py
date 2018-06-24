@@ -50,7 +50,7 @@ def dns_resolve_ipv6_addr(source_ip,hostname, dns_server, mac_gw,interface):
 	    print "No response from dns server",dns_server
 	    exit(0)
 
-def multi_ping_scanner(source,interface, mytimeout, flood,flooding_interval):
+def multi_ping_scanner(source,interface,flood,flooding_interval):
 	for ifaces in scapy.arch.linux.in6_getifaddr(): 	#in6_getifaddr()  #return a list of IPs - ifaces, etc
 		if ifaces[2]==interface:
 			#Simple Echo Request

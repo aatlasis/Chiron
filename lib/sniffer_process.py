@@ -12,6 +12,7 @@ class mySniffer():
 	self.sniffer_timeout=sniffer_timeout
         self.source_ip=source_ip
         self.dns_server=dns_server
+	#print "Starting sniffing for",self.sniffer_timeout," sec"
 	print "Starting sniffing..."
         if self.sniffer_timeout:
     	    sniff(iface=self.interface, prn=self.handler, store=0, timeout=float(self.sniffer_timeout))
