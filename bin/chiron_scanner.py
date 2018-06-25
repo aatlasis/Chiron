@@ -126,6 +126,7 @@ class Worker(multiprocessing.Process):
 			packets=create_extension_headers_chain.create_datagram(self.mac_source,ether_dst,int(self.values.number_of_fragments),self.list_of_next_headers,self.list_of_offsets,self.list_of_fragment_lengths,self.list_of_fragment_m_bits,self.values.fragment_id,self.unfragmentable_part,self.size_of_unfragmentable_part,self.first_next_header_value,self.fragmentable_extension_headers,self.size_of_fragmentable_extension_headers,layer4_and_payload)
 			create_extension_headers_chain.send_packets(self.s,packets,self.values.flood,self.values.delay)
 		    elif self.values.tr_gen:
+                            print "TRACEROUTING"
                             packets_list={}
 			    if self.values.layer4=="tcp":
 			        if destports==-1:
@@ -163,10 +164,10 @@ class Worker(multiprocessing.Process):
 					icmpid=random.randrange(1,65535,1)  #generate a random ICMPv6 id
 				    packets_list[icmpid]=(hop_limit,dest)
 				    layer4_and_payload=create_layer4.icmpv6_id(self.values.l4_data,icmpid)
-			            self.unfragmentable_part,self.size_of_unfragmentable_part=create_extension_headers_chain.create_unfragmentable_part(source_ip, dest,hop_limit,self.values.lEu,int(self.values.size_of_extheaders),self.values.fuzz)
+			            self.unfragmentable_part,self.size_of_unfragmentable_part=create_extension_headers_chain.create_unfragmentable_part(self.source_ip, dest,hop_limit,self.values.lEu,int(self.values.size_of_extheaders),self.values.fuzz)
 				    packets=create_extension_headers_chain.create_datagram(self.mac_source,ether_dst,int(self.values.number_of_fragments),self.list_of_next_headers,self.list_of_offsets,self.list_of_fragment_lengths,self.list_of_fragment_m_bits,self.values.fragment_id,self.unfragmentable_part,self.size_of_unfragmentable_part,self.first_next_header_value,self.fragmentable_extension_headers,self.size_of_fragmentable_extension_headers,layer4_and_payload)
 				    create_extension_headers_chain.send_packets(self.s,packets,self.values.flood,self.values.delay)
-                                    packets_sent_list.put(packets_list)
+                                    self.packets_sent_list.put(packets_list)
 	    else:
 		if checkip.is_valid_host(dest):
 		    res_str=dest+ " could not be resolved"
@@ -313,18 +314,15 @@ def main():
 	            gw_mac = auxiliary_functions.get_gw_mac(values.gateway,values.interface,ip_list,source_ip) 
 	            #check if fragmentation parameters are OK
 	            list_of_fragment_lengths,list_of_offsets,list_of_fragment_m_bits,list_of_next_headers=checkings.check_fragmentation_parameters(values.list_of_fragment_lengths,values.list_of_offsets,values.list_of_fragment_m_bits,values.list_of_next_headers,values.number_of_fragments)
-	            if values.pn:
-    		        pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 2,sum_of_results,values.sniffer_timeout,source_ip,values.dns_server,))
-	            elif values.rh0:
-    	                pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 7,sum_of_results,values.sniffer_timeout,source_ip,values.dns_server,))
-	            elif values.tr_gen:
-    	                pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 6,sum_of_results,values.sniffer_timeout,source_ip,values.dns_server,))
-                        while not packets_sent_list.empty():
-                            try:
-                                packets_list=packets_sent_list.get(timeout=2)
-                                complete_packets_list.append(packets_list)
-                            except Empty:
-                                continue
+	            if values.pn or values.rh0 or values.tr_gen:
+    	                for d in ip_list:
+			    q.put([str(d),None])
+	                if values.pn:
+    		            pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 2,sum_of_results,values.sniffer_timeout,source_ip,values.dns_server,))
+	                elif values.rh0:
+    	                    pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 7,sum_of_results,values.sniffer_timeout,source_ip,values.dns_server,))
+	                elif values.tr_gen:
+    	                    pr = multiprocessing.Process(target=sniffer_process.mySniffer, args=(values.interface, 6,sum_of_results,values.sniffer_timeout,source_ip,values.dns_server,))
                     else:
                         packets_list={}
 	                ###DEFINE THE DESTINATION PORTS
@@ -381,6 +379,12 @@ def main():
     		            print "Exiting on user's request..."
 		            print_scanning_results(values,sum_of_results,source_ip,complete_packets_list)
     		            exit(1)	
+                    while not packets_sent_list.empty():
+                    try:
+                        packets_list=packets_sent_list.get(timeout=2)
+                        complete_packets_list.append(packets_list)
+                    except Empty:
+                        continue
                     print "Stop sniffing..."
 	            print_scanning_results(values,sum_of_results,source_ip,complete_packets_list)
                     pr.terminate()
@@ -391,7 +395,6 @@ def print_scanning_results(values,q,source_ip,packets_sent_list):
         tmp_result=q.get()
     	my_results.append(tmp_result)
         print tmp_result
-    	my_results.append(q.get())
     print "\n\nScanning Complete!"
     print "=================="
     if values.sS or values.sA or values.sX or values.sR or values.sF or values.sN:
@@ -426,7 +429,7 @@ def print_scanning_results(values,q,source_ip,packets_sent_list):
 		for p in routes.keys():
 		    f.write("\n"+str(p)+str(routes.get(p))+"\n")	
 	if not values.tr_gen:
-		for r in final_results:
+		for r in my_results:
 		    f.write(str(r)+"\n")	
 		if opened_tcp_list:
 		    f.write("\n\nOPENED TCP PORTS")
