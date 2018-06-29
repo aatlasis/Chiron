@@ -380,11 +380,11 @@ def main():
 		            print_scanning_results(values,sum_of_results,source_ip,complete_packets_list)
     		            exit(1)	
                     while not packets_sent_list.empty():
-                    try:
-                        packets_list=packets_sent_list.get(timeout=2)
-                        complete_packets_list.append(packets_list)
-                    except Empty:
-                        continue
+                        try:
+                            packets_list=packets_sent_list.get(timeout=2)
+                            complete_packets_list.append(packets_list)
+                        except Empty:
+                            continue
                     print "Stop sniffing..."
 	            print_scanning_results(values,sum_of_results,source_ip,complete_packets_list)
                     pr.terminate()
