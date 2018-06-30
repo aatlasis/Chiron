@@ -425,7 +425,7 @@ def print_scanning_results(values,q,source_ip,packets_sent_list):
 		f.write("\nIPv6 address\t\t\t\t\tProtocol\t\tID\n")
 	elif values.tr_gen:
 		f.write("\n")	
-		routes=traceroute_results(my_results)
+		routes=results.traceroute_results(my_results)
 		for p in routes.keys():
 		    f.write("\n"+str(p)+str(routes.get(p))+"\n")	
 	if not values.tr_gen:
