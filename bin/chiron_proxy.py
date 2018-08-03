@@ -35,14 +35,14 @@ class PicklablePacket:
         return pkt
 
 #REQUIRED When loopback interface is used. Check if we can get rid off it - Use a pseudo interface instead of loopback?
-def check_if_double_tcp_packet_in_ipv4_loopback(source_port,destination_port, seq, ack):
+'''def check_if_double_tcp_packet_in_ipv4_loopback(source_port,destination_port, seq, ack):
 	if [source_port,destination_port,seq,ack] in used_tcp_id:
 		used_tcp_id.remove([source_port,destination_port,seq,ack])
 		return False
 	else: 
 		used_tcp_id.append([source_port,destination_port,seq,ack])
 		return True
-
+'''
 #Sniff in IPv6 Interface, send to IPv4
 class IPv6_to_IPv4_Worker() :
 	def __init__(self,ipv6filter,ipv4_receiver,ipv4_sender, interface):
