@@ -108,7 +108,7 @@ class IPv6Sender():
 		self.tipid=random.randrange(0,65535,1)
 		while True :
 			try :
-				pkt = self.queue.get(timeout=0.1)  #HOW TIMEOUT AFFECT THE PERFORMANCE? PLAY WITH IT
+				pkt = self.queue.get(timeout=0.1)  #HOW DOES TIMEOUT AFFECT THE PERFORMANCE? 
 				#print pkt
 				packet=PicklablePacket.__call__(pkt)
 				#print packet.show()
@@ -118,7 +118,7 @@ class IPv6Sender():
 				continue	
     	def Sender(self,packets):
 		if packets.haslayer(scapy.layers.inet.TCP):
-			if not check_if_double_tcp_packet_in_ipv4_loopback(packets[scapy.layers.inet.TCP].sport, packets[scapy.layers.inet.TCP].dport, packets[scapy.layers.inet.TCP].seq, packets[scapy.layers.inet.TCP].ack):
+			#if not check_if_double_tcp_packet_in_ipv4_loopback(packets[scapy.layers.inet.TCP].sport, packets[scapy.layers.inet.TCP].dport, packets[scapy.layers.inet.TCP].seq, packets[scapy.layers.inet.TCP].ack):
 				#print "TCP IPv4 packet received:", packets.sprintf("%IP.src% %IP.dst% payload length=%IP.len% id=%IP.id% proto=%IP.proto% source port=%TCP.sport% destination port=%TCP.dport% flags=%TCP.flags% seq=%TCP.seq% ack=%TCP.ack%")
 				del(packets[scapy.layers.inet.TCP].chksum)
 				mypayload = packets[scapy.layers.inet.TCP]
@@ -189,17 +189,6 @@ def main():
 	ip_list,IPv6_scope_defined = definitions.define_destinations(values.destination,False,False,False,False)
 	gw_mac = auxiliary_functions.get_gw_mac(values.gateway,values.ipv6interface,ip_list,source_ip) 
 
-	#CONFIGURE IPTABLES
-	if platform.system()=="Linux":
-		#output = subprocess.check_output(['ps', '-A'])
-		#if 'firewalld' in output:
-    		#	print("firewalld is up an running!")
-		subprocess.call(['ip6tables', '-I', 'OUTPUT', '1', '-p', 'icmpv6', '--icmpv6-type', 'destination-unreachable', '-s', source_ip, '-d', values.destination, '-j', 'DROP'])
-		subprocess.call(['iptables', '-I', 'OUTPUT', '1', '--source', '127.0.0.3', '--destination', '127.0.0.1','-p', 'tcp', '--tcp-flags', 'RST', 'RST',  '-j', 'DROP'])
-		subprocess.call(['ip6tables', '-I', 'OUTPUT', '1', '-p', 'tcp', '-s', source_ip, '-d', values.destination, '-j', 'DROP'])
-	else:
-		print "This is not a Linux system. You must configure the firewall on your own"
-
 	dest=ip_list[0] #Use just the 1st address, if more than one is provided. No reason for many targets addresses in the proxy
 
 	###CHECK THE VALIDITY OF THE IP DESTINATION ADDRESSES###
@@ -230,6 +219,18 @@ def main():
 	else:
 		res_str=dest+ " is not a valid IPv6 address"
 
+	#CONFIGURE IPTABLES
+	if platform.system()=="Linux":
+		#output = subprocess.check_output(['ps', '-A'])
+		#if 'firewalld' in output:
+    		#	print("firewalld is up an running!")
+		subprocess.call(['ip6tables', '-I', 'OUTPUT', '1', '-p', 'icmpv6', '--icmpv6-type', 'destination-unreachable', '-s', source_ip, '-d', values.destination, '-j', 'DROP'])
+		subprocess.call(['iptables', '-I', 'OUTPUT', '1', '--source', '127.0.0.3', '--destination', '127.0.0.1','-p', 'tcp', '--tcp-flags', 'RST', 'RST',  '-j', 'DROP'])
+		subprocess.call(['ip6tables', '-I', 'OUTPUT', '1', '-p', 'tcp', '-s', source_ip, '-d', values.destination, '-j', 'DROP'])
+	else:
+		print "This is not a Linux system. You must configure the firewall on your own"
+
+        #CREATE THE IPV6 HEADER CHAIN
 	list_of_fragment_lengths,list_of_offsets,list_of_fragment_m_bits,list_of_next_headers=checkings.check_fragmentation_parameters(values.list_of_fragment_lengths,values.list_of_offsets,values.list_of_fragment_m_bits,values.list_of_next_headers,values.number_of_fragments)
 	unfragmentable_part,size_of_unfragmentable_part=create_extension_headers_chain.create_unfragmentable_part(source_ip, dest,int(values.hoplimit),values.lEu,int(values.size_of_extheaders),0)
 	fragmentable_extension_headers,size_of_fragmentable_extension_headers,first_next_header_value=create_extension_headers_chain.create_fragmentable_part(values.lEf,int(values.size_of_extheaders),0)
